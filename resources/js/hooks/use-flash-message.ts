@@ -1,6 +1,9 @@
-import type { SharedFlashMessage } from '@/types';
+import type { FlashMessage } from '@/types';
 import { usePage } from '@inertiajs/react';
 
 export const useFlashMessage = () => {
-  return usePage<SharedFlashMessage>().props.flashMessage;
+  const {
+    flash: { flashMessage },
+  } = usePage() as Omit<ReturnType<typeof usePage>, 'flash'> & { flash: FlashMessage };
+  return flashMessage;
 };

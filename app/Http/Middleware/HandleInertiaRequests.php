@@ -40,7 +40,6 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => Auth::user()?->toResource(AuthResource::class),
-            'flashMessage' => request()->session()->get('flashMessage'),
         ];
     }
 }

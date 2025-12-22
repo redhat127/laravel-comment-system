@@ -12,7 +12,7 @@ export type SharedPropAuth = {
   auth?: Pick<UsersTable, 'id' | 'name' | 'username' | 'email' | 'email_verified_at' | 'created_at' | 'updated_at'>;
 };
 
-export type SharedFlashMessage = {
+export type FlashMessage = {
   flashMessage?: {
     type: 'error' | 'success';
     text: string;

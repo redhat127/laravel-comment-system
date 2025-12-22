@@ -17,13 +17,20 @@ class User extends Authenticatable
 
     public static function generateUniqueUsername()
     {
-        $username = 'user_'.Str::random(10);
+        $username = 'user_'.Str::lower(Str::random(10));
 
         if (self::where('username', $username)->exists()) {
             return self::generateUniqueUsername();
         }
 
         return $username;
+    }
+
+    public static function generateName()
+    {
+        $name = 'name_'.Str::random(10);
+
+        return $name;
     }
 
     protected function casts()
