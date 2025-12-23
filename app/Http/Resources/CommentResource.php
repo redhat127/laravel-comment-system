@@ -24,6 +24,8 @@ class CommentResource extends JsonResource
             ]),
             'created_at_for_human' => $this->created_at->diffForHumans(),
             'user' => CommentUserResource::make($this->whenLoaded('user')),
+            'likes_count' => $this->whenCounted('likes'),
+            'is_liked_by_auth' => $this->whenLoaded('likes', fn () => $this->likes->isNotEmpty(), false),
         ];
     }
 }

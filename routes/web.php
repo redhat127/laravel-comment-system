@@ -49,5 +49,6 @@ Route::middleware('auth')->group(function () {
             Route::post('/', 'post')->name('post');
             Route::patch('/{commentId}', 'patch')->name('patch');
             Route::delete('/{commentId}', 'delete')->name('delete');
+            Route::post('/{commentId}/like', 'likeComment')->name('likeComment');
         });
 });

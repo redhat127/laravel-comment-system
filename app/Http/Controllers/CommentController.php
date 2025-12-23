@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Comment;
 use App\Trait\CustomRuleValidation;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -83,6 +84,21 @@ class CommentController extends Controller
             'type' => 'success',
             'text' => 'Comment deleted.',
         ]);
+
+        return back();
+    }
+
+    public function likeComment(string $commentId)
+    {
+        $commentId = $this->validateCommentId($commentId);
+
+        $comment = Comment::findOrFail($commentId);
+
+        $userId = Auth::id();
+
+        $like = $comment->likes()->where('user_id', $userId)->first();
+
+        $like ? $like->delete() : $comment->likes()->create(['user_id' => $userId]);
 
         return back();
     }

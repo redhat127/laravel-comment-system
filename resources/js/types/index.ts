@@ -18,6 +18,14 @@ export type CommentsTable = {
   user_id: string;
 };
 
+export type LikesTable = {
+  id: string;
+  user_id: string;
+  comment_id: string;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
 export type SharedPropAuth = {
   auth?: {
     data: Pick<

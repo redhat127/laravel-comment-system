@@ -11,7 +11,11 @@ import { MessageSquare } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 export interface HomePageProps {
-  comments: { data: Array<CommentsTable & { created_at_for_human: string; user: Pick<UsersTable, 'name' | 'avatar'> }> };
+  comments: {
+    data: Array<
+      CommentsTable & { is_liked_by_auth: boolean; likes_count: number; created_at_for_human: string; user: Pick<UsersTable, 'name' | 'avatar'> }
+    >;
+  };
   comments_count: number;
 }
 
