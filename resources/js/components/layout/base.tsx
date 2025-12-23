@@ -46,7 +46,7 @@ export const BaseLayout = ({ children }: { children: ReactNode }) => {
       )}
       <main
         className={cn({
-          'flex min-h-full items-center justify-center p-4': isErrorPage || isAuthPage,
+          'flex min-h-screen items-center justify-center p-4': isErrorPage || isAuthPage,
           'mt-16': !isErrorPage && !isAuthPage,
         })}
       >

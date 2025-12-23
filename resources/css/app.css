@@ -12,12 +12,6 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
 @layer base {
-  html,
-  body,
-  #app {
-    @apply h-full;
-  }
-
   body {
     @apply w-full overflow-x-hidden;
   }
