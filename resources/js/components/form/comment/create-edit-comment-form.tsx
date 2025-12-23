@@ -63,6 +63,7 @@ const BodyTextBox = <TFieldValues extends FieldValues = FieldValues>({
     >
       Characters left: {bodyCharactersLeft}
     </p>
+    <p className="text-xs text-muted-foreground">Press Shift+Enter for new line</p>
   </div>
 );
 
