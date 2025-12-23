@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { CustomToaster } from '../custom-toaster';
 import { ToggleTheme, ToggleThemeProvider } from '../theme-provider';
 import { Button } from '../ui/button';
+import { UserDropdown } from '../user-dropdown';
 
 export const BaseLayout = ({ children }: { children: ReactNode }) => {
   const { component } = usePage();
@@ -26,10 +27,12 @@ export const BaseLayout = ({ children }: { children: ReactNode }) => {
         <header className="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b bg-white p-4 px-8 dark:bg-slate-950">
           <div></div>
           <div className="flex items-center gap-2">
-            {!auth && (
+            {!auth ? (
               <Button asChild size="sm">
                 <Link href={authRoute.login.get()}>Login</Link>
               </Button>
+            ) : (
+              <UserDropdown />
             )}
             <ToggleTheme />
           </div>

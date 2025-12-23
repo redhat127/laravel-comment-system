@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('password')->nullable();
             $table->rememberToken();
             $table->timestamps();
+            $table->string('avatar')->nullable();
         });
 
         Schema::create('sessions', function (Blueprint $table) {

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\LogoutController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -21,5 +22,14 @@ Route::middleware('guest')->group(function () {
                     Route::post('/verify-code', 'verifyCodePost')->name('verifyCode.post');
                     Route::post('/resend-code', 'resendCode')->name('resendCode');
                 });
+        });
+});
+
+Route::middleware('auth')->group(function () {
+    Route::prefix('logout')
+        ->name('logout.')
+        ->controller(LogoutController::class)
+        ->group(function () {
+            Route::post('/', 'post')->name('post');
         });
 });
