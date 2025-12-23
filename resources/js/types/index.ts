@@ -15,6 +15,7 @@ export type CommentsTable = {
   body: string;
   created_at: string | null;
   updated_at: string | null;
+  user_id: string;
 };
 
 export type SharedPropAuth = {

@@ -1,5 +1,5 @@
-import { CommentList } from '@/components/comment-list';
-import { CreateCommentForm } from '@/components/form/create-comment-form';
+import { CommentList } from '@/components/comment/comment-list';
+import { CreateCommentForm } from '@/components/form/comment/create-comment-form';
 import { BaseLayout } from '@/components/layout/base';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

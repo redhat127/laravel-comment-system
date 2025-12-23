@@ -7,10 +7,10 @@ import { Send } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import z from 'zod';
-import { SubmitBtn } from '../submit-btn';
-import { Textbox } from '../textbox';
-import { FieldGroup } from '../ui/field';
-import { UserAvatar } from '../user-avatar';
+import { SubmitBtn } from '../../submit-btn';
+import { Textbox } from '../../textbox';
+import { FieldGroup } from '../../ui/field';
+import { UserAvatar } from '../../user-avatar';
 
 const createCommentSchema = z.object({
   body: commentBodyRule,

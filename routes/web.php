@@ -47,5 +47,6 @@ Route::middleware('auth')->group(function () {
         ->controller(CommentController::class)
         ->group(function () {
             Route::post('/', 'post')->name('post');
+            Route::delete('/{commentId}', 'delete')->name('delete');
         });
 });
