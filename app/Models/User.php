@@ -35,6 +35,10 @@ class User extends Authenticatable
 
     protected function casts()
     {
-        return ['password' => 'hashed'];
+        return [
+            'password' => 'hashed',
+            'username_changed_at' => 'datetime',
+            'email_verified_at' => 'datetime',
+        ];
     }
 }
