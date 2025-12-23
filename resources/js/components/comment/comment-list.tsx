@@ -30,11 +30,14 @@ const CommentCard = ({ comment }: { comment: Comment }) => {
         <CardTitle className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
             <UserAvatar widthHeightClassNames="h-12 w-12 min-w-12" user={comment.user} />
-            <div className="mt-1 flex flex-col items-start sm:flex-row sm:items-center sm:gap-2">
-              <h3 className="max-w-30 truncate text-sm font-medium capitalize">{comment.user.name}</h3>
-              <span className="hidden sm:inline-block">•</span>
-              <span className="text-xs text-muted-foreground">{comment.created_at_for_human}</span>
-              {comment.created_at !== comment.updated_at && <span className="text-xs text-muted-foreground">(edited)</span>}
+            <div className="mt-1">
+              <div className="flex flex-col">
+                <h3 className="max-w-30 truncate text-sm font-medium capitalize">{comment.user.name}</h3>
+                <div className="flex gap-1">
+                  <span className="text-xs text-muted-foreground">{comment.created_at_for_human}</span>
+                  {comment.created_at !== comment.updated_at && <span className="text-xs text-muted-foreground">(edited)</span>}
+                </div>
+              </div>
             </div>
           </div>
           {auth?.id === comment.user_id && <CommentDropdown comment={comment} openEditCommentBox={openEditCommentBox} />}

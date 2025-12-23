@@ -7,7 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 export const CommentDropdown = ({ comment, openEditCommentBox }: { comment: CommentsTable; openEditCommentBox(): void }) => {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="self-end" asChild>
+      <DropdownMenuTrigger className="self-start" asChild>
         <Button variant="outline" size="icon-sm">
           <Ellipsis />
         </Button>
