@@ -2,12 +2,12 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\CommentController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LogoutController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return inertia('home');
-})->name('home');
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::middleware('guest')->group(function () {
     Route::prefix('auth')
@@ -40,5 +40,12 @@ Route::middleware('auth')->group(function () {
         ->group(function () {
             Route::get('/', 'get')->name('get');
             Route::post('/profile-details', 'profileDetails')->name('profileDetails');
+        });
+
+    Route::prefix('comment')
+        ->name('comment.')
+        ->controller(CommentController::class)
+        ->group(function () {
+            Route::post('/', 'post')->name('post');
         });
 });

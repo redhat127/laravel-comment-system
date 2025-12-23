@@ -10,6 +10,13 @@ export type UsersTable = {
   avatar: string | null;
 };
 
+export type CommentsTable = {
+  id: string;
+  body: string;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
 export type SharedPropAuth = {
   auth?: {
     data: Pick<

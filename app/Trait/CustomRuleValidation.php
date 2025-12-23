@@ -49,4 +49,9 @@ trait CustomRuleValidation
 
         return $rules;
     }
+
+    public function commentBodyRule()
+    {
+        return ['bail', 'required', 'string', 'min:10', 'max:200'];
+    }
 }
