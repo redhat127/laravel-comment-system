@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Helpers\AvatarHelper;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -23,6 +24,7 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => 'password123456',
+            'avatar' => AvatarHelper::diceBear(),
         ];
     }
 }

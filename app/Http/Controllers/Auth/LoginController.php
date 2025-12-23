@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Helpers\AvatarHelper;
 use App\Http\Controllers\Controller;
 use App\Mail\LoginCodeMail;
 use App\Models\LoginCode;
@@ -224,6 +225,7 @@ class LoginController extends Controller
                 'username' => User::generateUniqueUsername(),
                 'email' => $email,
                 'email_verified_at' => now(),
+                'avatar' => AvatarHelper::diceBear(),
             ]);
         }
 
