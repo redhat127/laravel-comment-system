@@ -26,7 +26,7 @@ class CommentController extends Controller
         return back();
     }
 
-    public function delete(string $commentId)
+    private function validateCommentId(string $commentId)
     {
         $validator = validator([
             'commentId' => $commentId,
@@ -40,9 +40,38 @@ class CommentController extends Controller
             );
         }
 
-        $commentId = $validator->validated()['commentId'];
+        return $validator->validated()['commentId'];
+    }
 
-        $comment = Auth::user()->comments()->where('id', $commentId)->first();
+    public function patch(string $commentId)
+    {
+        $commentId = $this->validateCommentId($commentId);
+
+        $comment = Auth::user()->comments()->findOrFail($commentId);
+
+        if (! $comment) {
+            abort(404);
+        }
+
+        $validated = request()->validate([
+            'body' => $this->commentBodyRule(),
+        ]);
+
+        $comment->update($validated);
+
+        inertia()->flash('flashMessage', [
+            'type' => 'success',
+            'text' => 'Comment updated.',
+        ]);
+
+        return back();
+    }
+
+    public function delete(string $commentId)
+    {
+        $commentId = $this->validateCommentId($commentId);
+
+        $comment = Auth::user()->comments()->findOrFail($commentId);
 
         if (! $comment) {
             abort(404);

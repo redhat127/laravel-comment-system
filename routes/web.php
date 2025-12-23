@@ -47,6 +47,7 @@ Route::middleware('auth')->group(function () {
         ->controller(CommentController::class)
         ->group(function () {
             Route::post('/', 'post')->name('post');
+            Route::patch('/{commentId}', 'patch')->name('patch');
             Route::delete('/{commentId}', 'delete')->name('delete');
         });
 });

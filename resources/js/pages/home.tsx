@@ -1,5 +1,5 @@
 import { CommentList } from '@/components/comment/comment-list';
-import { CreateCommentForm } from '@/components/form/comment/create-comment-form';
+import { CreateEditCommentForm } from '@/components/form/comment/create-edit-comment-form';
 import { BaseLayout } from '@/components/layout/base';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,7 +42,7 @@ export default function Home({ comments: { data: comments }, comments_count }: H
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <CreateCommentForm />
+              <CreateEditCommentForm mode="create" />
             </CardContent>
           </Card>
         )}
