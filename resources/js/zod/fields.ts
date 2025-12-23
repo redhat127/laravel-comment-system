@@ -27,4 +27,4 @@ export const nameRule = z
     error: 'allowed characters: english letters and numbers, underscores, hyphens and spaces.',
   });
 
-export const commentBodyRule = z.string().trim().min(10, 'minimum for body is 10 characters.').max(200, 'body is more than 200 characters.');
+export const commentBodyRule = z.string().trim().min(10, 'minimum for body is 10 characters.').max(500, 'body is more than 500 characters.');

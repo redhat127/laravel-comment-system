@@ -225,7 +225,7 @@ class LoginController extends Controller
                 'username' => User::generateUniqueUsername(),
                 'email' => $email,
                 'email_verified_at' => now(),
-                'avatar' => AvatarHelper::diceBear(),
+                'avatar' => AvatarHelper::diceBear('bottts'),
             ]);
         }
 

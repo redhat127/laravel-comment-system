@@ -1,8 +1,14 @@
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
+import type { UsersTable } from '@/types';
 
-export const UserAvatar = ({ widthHeightClassNames }: { widthHeightClassNames?: string }) => {
-  const { name, avatar } = useAuth()!;
+export const UserAvatar = ({
+  widthHeightClassNames,
+  ...props
+}: { widthHeightClassNames?: string } & { user?: Pick<UsersTable, 'name' | 'avatar'> }) => {
+  const auth = useAuth()!;
+  const name = props.user?.name ?? auth.name;
+  const avatar = props.user?.avatar ?? auth.avatar;
   return (
     <div className={cn('overflow-hidden rounded-full', widthHeightClassNames, { 'h-8 w-8 min-w-8': !widthHeightClassNames })}>
       {avatar ? (

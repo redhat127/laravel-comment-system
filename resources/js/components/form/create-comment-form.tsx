@@ -32,7 +32,7 @@ export const CreateCommentForm = () => {
   const [isPending, setIsPending] = useState(false);
   const isFormDisabled = isSubmitting || isPending;
   const bodyLength = watch('body').trim().length;
-  const bodyCharactersLeft = 200 - bodyLength;
+  const bodyCharactersLeft = 500 - bodyLength;
   return (
     <form
       onSubmit={handleSubmit((data) => {

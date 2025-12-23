@@ -1,3 +1,4 @@
+import { CommentList } from '@/components/comment-list';
 import { CreateCommentForm } from '@/components/form/create-comment-form';
 import { BaseLayout } from '@/components/layout/base';
 import { Badge } from '@/components/ui/badge';
@@ -9,12 +10,12 @@ import { Head } from '@inertiajs/react';
 import { MessageSquare } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-interface Props {
-  comments: { data: Array<CommentsTable & { user: Pick<UsersTable, 'name' | 'avatar'> }> };
+export interface HomePageProps {
+  comments: { data: Array<CommentsTable & { created_at_for_human: string; user: Pick<UsersTable, 'name' | 'avatar'> }> };
   comments_count: number;
 }
 
-export default function Home({ comments: { data: comments }, comments_count }: Props) {
+export default function Home({ comments: { data: comments }, comments_count }: HomePageProps) {
   const auth = useAuth();
   return (
     <>
@@ -45,7 +46,9 @@ export default function Home({ comments: { data: comments }, comments_count }: P
             </CardContent>
           </Card>
         )}
-        <div className="mt-8">{comments.length > 0 ? null : <p className="text-muted-foreground">No comment found.</p>}</div>
+        <div className="mt-8">
+          {comments.length > 0 ? <CommentList comments={comments} /> : <p className="text-muted-foreground">No comment found.</p>}
+        </div>
       </div>
     </>
   );

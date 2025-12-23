@@ -24,7 +24,7 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => 'password123456',
-            'avatar' => AvatarHelper::diceBear(),
+            'avatar' => AvatarHelper::diceBear('bottts'),
         ];
     }
 }

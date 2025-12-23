@@ -52,6 +52,6 @@ trait CustomRuleValidation
 
     public function commentBodyRule()
     {
-        return ['bail', 'required', 'string', 'min:10', 'max:200'];
+        return ['bail', 'required', 'string', 'min:10', 'max:500'];
     }
 }

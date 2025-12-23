@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\File;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Comment>
@@ -17,8 +18,11 @@ class CommentFactory extends Factory
      */
     public function definition(): array
     {
+        $markdownPath = database_path('seeders/markdown/comment-body.md');
+        $body = File::get($markdownPath);
+
         return [
-            'body' => fake()->realText(),
+            'body' => $body,
             'user_id' => User::first()->id ?? User::factory(),
         ];
     }
