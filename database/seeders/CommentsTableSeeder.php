@@ -20,6 +20,8 @@ class CommentsTableSeeder extends Seeder
      */
     public function run(): void
     {
+        Comment::truncate();
+
         $this->users = User::all();
 
         // Create top-level comments until we reach 50 total comments
