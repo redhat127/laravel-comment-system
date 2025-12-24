@@ -14,10 +14,51 @@ import { CommentDropdown } from './comment-dropdown';
 
 type Comment = HomePageProps['comments']['data'][0];
 
+// Load initial state from localStorage
+const getInitialShowReplies = (commentId: string) => {
+  try {
+    return localStorage.getItem(`comment-${commentId}-expanded`) === 'true';
+  } catch {
+    return false;
+  }
+};
+
+// Add this helper function at the top of your file, outside the component
+const cleanupOldExpandedStates = () => {
+  try {
+    const keys = Object.keys(localStorage);
+    const commentExpandedKeys = keys.filter((key) => key.startsWith('comment-') && key.endsWith('-expanded'));
+
+    // Keep only the last 50 expanded states to prevent localStorage bloat
+    if (commentExpandedKeys.length > 50) {
+      commentExpandedKeys.slice(0, commentExpandedKeys.length - 50).forEach((key) => {
+        localStorage.removeItem(key);
+      });
+    }
+  } catch {
+    // Ignore errors
+  }
+};
+
 const CommentCard = ({ comment, isReply = false }: { comment: Comment; isReply?: boolean }) => {
   const auth = useAuth();
   const [commentEditing, setCommentEditing] = useState(false);
-  const [showReplies, setShowReplies] = useState(false);
+
+  const [showReplies, setShowReplies] = useState(() => getInitialShowReplies(comment.id));
+
+  const toggleReplies = () => {
+    const newValue = !showReplies;
+    setShowReplies(newValue);
+    try {
+      if (newValue) {
+        localStorage.setItem(`comment-${comment.id}-expanded`, 'true');
+      } else {
+        localStorage.removeItem(`comment-${comment.id}-expanded`);
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+  };
 
   const openEditCommentBox = () => {
     if (!commentEditing) setCommentEditing(true);
@@ -33,6 +74,11 @@ const CommentCard = ({ comment, isReply = false }: { comment: Comment; isReply?:
     }
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [commentEditing]);
+
+  useEffect(() => {
+    // Cleanup on mount (only runs once when component first loads)
+    cleanupOldExpandedStates();
+  }, []);
 
   const hasReplies = comment.replies && comment.replies.length > 0;
 
@@ -65,7 +111,7 @@ const CommentCard = ({ comment, isReply = false }: { comment: Comment; isReply?:
           <div className="flex items-center gap-4">
             <Likes commentId={comment.id} likes_count={comment.likes_count} is_liked_by_auth={comment.is_liked_by_auth} />
             {hasReplies && (
-              <Button variant="outline" size="sm" onClick={() => setShowReplies((prev) => !prev)}>
+              <Button variant="outline" size="sm" onClick={toggleReplies}>
                 {showReplies ? 'Hide' : 'Show'} {comment.replies?.length} {comment.replies?.length === 1 ? 'reply' : 'replies'}
               </Button>
             )}
