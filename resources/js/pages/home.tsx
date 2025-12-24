@@ -32,7 +32,7 @@ export default function Home({ comments: { data: comments }, comments_count }: H
       <Head>
         <title>{generateTitle('Start Commenting')}</title>
       </Head>
-      <div className="mx-auto max-w-6xl space-y-4 p-8 pb-12">
+      <div className="mx-auto max-w-7xl space-y-4 p-8 pb-12">
         <Card>
           <CardHeader className="gap-0">
             <CardTitle>
