@@ -18,6 +18,7 @@ class CommentResource extends JsonResource
             ...$this->only([
                 'id',
                 'body',
+                'parent_id',
                 'created_at',
                 'updated_at',
                 'user_id',
@@ -26,6 +27,7 @@ class CommentResource extends JsonResource
             'user' => CommentUserResource::make($this->whenLoaded('user')),
             'likes_count' => $this->whenCounted('likes'),
             'is_liked_by_auth' => $this->whenLoaded('likes', fn () => $this->likes->isNotEmpty(), false),
+            'replies' => CommentResource::collection($this->whenLoaded('descendants')),
         ];
     }
 }

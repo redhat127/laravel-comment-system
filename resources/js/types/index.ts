@@ -13,6 +13,7 @@ export type UsersTable = {
 export type CommentsTable = {
   id: string;
   body: string;
+  parent_id: string | null;
   created_at: string | null;
   updated_at: string | null;
   user_id: string;

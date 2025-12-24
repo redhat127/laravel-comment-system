@@ -14,13 +14,16 @@ import { CommentDropdown } from './comment-dropdown';
 
 type Comment = HomePageProps['comments']['data'][0];
 
-const CommentCard = ({ comment }: { comment: Comment }) => {
+const CommentCard = ({ comment, isReply = false }: { comment: Comment; isReply?: boolean }) => {
   const auth = useAuth();
   const [commentEditing, setCommentEditing] = useState(false);
+  const [showReplies, setShowReplies] = useState(false);
+
   const openEditCommentBox = () => {
     if (!commentEditing) setCommentEditing(true);
   };
   const closeEditCommentBox = () => setCommentEditing(false);
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setCommentEditing(false);
@@ -30,34 +33,55 @@ const CommentCard = ({ comment }: { comment: Comment }) => {
     }
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [commentEditing]);
+
+  const hasReplies = comment.replies && comment.replies.length > 0;
+
   return (
-    <Card className="gap-2">
-      <CardHeader>
-        <CardTitle className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <UserAvatar widthHeightClassNames="h-12 w-12 min-w-12" user={comment.user} />
-            <div className="mt-1">
-              <div className="flex flex-col">
-                <h3 className="max-w-30 truncate text-sm font-medium capitalize">{comment.user.name}</h3>
-                <div className="flex gap-1">
-                  <span className="text-xs text-muted-foreground">{comment.created_at_for_human}</span>
-                  {comment.created_at !== comment.updated_at && <span className="text-xs text-muted-foreground">(edited)</span>}
+    <div className={cn(isReply && 'ml-8 border-l-2 pl-4')}>
+      <Card className="gap-2">
+        <CardHeader>
+          <CardTitle className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <UserAvatar widthHeightClassNames="h-12 w-12 min-w-12" user={comment.user} />
+              <div className="mt-1">
+                <div className="flex flex-col">
+                  <h3 className="max-w-30 truncate text-sm font-medium capitalize">{comment.user.name}</h3>
+                  <div className="flex gap-1">
+                    <span className="text-xs text-muted-foreground">{comment.created_at_for_human}</span>
+                    {comment.created_at !== comment.updated_at && <span className="text-xs text-muted-foreground">(edited)</span>}
+                  </div>
                 </div>
               </div>
             </div>
+            {auth?.id === comment.user_id && <CommentDropdown comment={comment} openEditCommentBox={openEditCommentBox} />}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {commentEditing ? (
+            <CreateEditCommentForm mode="edit" commentId={comment.id} body={comment.body} closeEditCommentBox={closeEditCommentBox} />
+          ) : (
+            <div className="text-[0.94rem] wrap-break-word whitespace-pre-wrap text-primary">{comment.body}</div>
+          )}
+          <div className="flex items-center gap-4">
+            <Likes commentId={comment.id} likes_count={comment.likes_count} is_liked_by_auth={comment.is_liked_by_auth} />
+            {hasReplies && (
+              <Button variant="outline" size="sm" onClick={() => setShowReplies((prev) => !prev)}>
+                {showReplies ? 'Hide' : 'Show'} {comment.replies?.length} {comment.replies?.length === 1 ? 'reply' : 'replies'}
+              </Button>
+            )}
           </div>
-          {auth?.id === comment.user_id && <CommentDropdown comment={comment} openEditCommentBox={openEditCommentBox} />}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {commentEditing ? (
-          <CreateEditCommentForm mode="edit" commentId={comment.id} body={comment.body} closeEditCommentBox={closeEditCommentBox} />
-        ) : (
-          <div className="text-[0.94rem] wrap-break-word whitespace-pre-wrap text-primary">{comment.body}</div>
-        )}
-        <Likes commentId={comment.id} likes_count={comment.likes_count} is_liked_by_auth={comment.is_liked_by_auth} />
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {/* Render nested replies only when showReplies is true */}
+      {hasReplies && showReplies && (
+        <div className="mt-4 space-y-4">
+          {comment.replies?.map((reply) => (
+            <CommentCard key={reply.id} comment={reply} isReply={true} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 };
 

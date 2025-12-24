@@ -21,4 +21,24 @@ class Comment extends Model
     {
         return $this->hasMany(Like::class);
     }
+
+    public function parent()
+    {
+        return $this->belongsTo(Comment::class, 'parent_id');
+    }
+
+    public function replies()
+    {
+        return $this->hasMany(Comment::class, 'parent_id')->latest();
+    }
+
+    public function descendants()
+    {
+        return $this->replies();
+    }
+
+    public function isParent()
+    {
+        return is_null($this->parent_id);
+    }
 }

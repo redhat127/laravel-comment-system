@@ -18,11 +18,11 @@ class CommentFactory extends Factory
      */
     public function definition(): array
     {
-        $markdownPath = database_path('seeders/markdown/comment-body.md');
-        $body = File::get($markdownPath);
+        // $markdownPath = database_path('seeders/markdown/comment-body.md');
+        // $body = File::get($markdownPath);
 
         return [
-            'body' => $body,
+            'body' => fake()->realText(),
             'user_id' => User::first()->id ?? User::factory(),
         ];
     }

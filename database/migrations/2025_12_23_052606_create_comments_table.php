@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('comments', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->text('body');
+            $table->ulid('parent_id')->nullable();
             $table->foreignUlid('user_id')
                 ->index()
                 ->constrained()

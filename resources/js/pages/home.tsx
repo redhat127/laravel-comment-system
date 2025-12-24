@@ -10,11 +10,17 @@ import { Head } from '@inertiajs/react';
 import { MessageSquare } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+type ExtraCommentPropsFromCommentResource = {
+  created_at_for_human: string;
+  user: Pick<UsersTable, 'name' | 'avatar'>;
+  likes_count: number;
+  is_liked_by_auth: boolean;
+  replies?: Array<CommentsTable & ExtraCommentPropsFromCommentResource>; // Optional, recursive type
+};
+
 export interface HomePageProps {
   comments: {
-    data: Array<
-      CommentsTable & { is_liked_by_auth: boolean; likes_count: number; created_at_for_human: string; user: Pick<UsersTable, 'name' | 'avatar'> }
-    >;
+    data: Array<CommentsTable & ExtraCommentPropsFromCommentResource>;
   };
   comments_count: number;
 }
