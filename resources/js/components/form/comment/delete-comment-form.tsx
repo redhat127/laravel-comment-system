@@ -21,6 +21,9 @@ export const DeleteCommentForm = ({ commentId }: { commentId: CommentsTable['id'
           onFinish() {
             setIsFormDisabled(false);
           },
+          onSuccess() {
+            localStorage.removeItem(`comment-${commentId}-expanded`);
+          },
         });
       }}
     >
