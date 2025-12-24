@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Comment extends Model
 {
-    /** @use HasFactory<\Database\Factories\CommentFactory> */
     use HasFactory, HasUlids, SoftDeletes;
 
     public function user()
@@ -27,11 +26,17 @@ class Comment extends Model
         return $this->belongsTo(Comment::class, 'parent_id');
     }
 
+    /**
+     * Use oldest() so replies follow a natural conversation flow (1 -> 2 -> 3)
+     */
     public function replies()
     {
-        return $this->hasMany(Comment::class, 'parent_id')->latest();
+        return $this->hasMany(Comment::class, 'parent_id')->oldest();
     }
 
+    /**
+     * Alias to match your CommentResource requirement
+     */
     public function descendants()
     {
         return $this->replies();

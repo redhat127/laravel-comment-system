@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import type { HomePageProps } from '@/pages/home';
 import { router } from '@inertiajs/react';
-import { Heart } from 'lucide-react';
+import { Heart, Reply } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CreateEditCommentForm } from '../form/comment/create-edit-comment-form';
 import { Button } from '../ui/button';
@@ -80,7 +80,9 @@ const CommentCard = ({ comment, isReply = false }: { comment: Comment; isReply?:
     cleanupOldExpandedStates();
   }, []);
 
-  const hasReplies = comment.replies && comment.replies.length > 0;
+  const hasReplies = comment.replies.length > 0;
+
+  const [replyTo, setReplyTo] = useState(false);
 
   return (
     <div className={cn(isReply && 'ml-8 border-l-2 pl-4')}>
@@ -108,21 +110,38 @@ const CommentCard = ({ comment, isReply = false }: { comment: Comment; isReply?:
           ) : (
             <div className="text-[0.94rem] wrap-break-word whitespace-pre-wrap text-primary">{comment.body}</div>
           )}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <Likes commentId={comment.id} likes_count={comment.likes_count} is_liked_by_auth={comment.is_liked_by_auth} />
+            {auth && auth.id !== comment.user_id && !replyTo && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setReplyTo(true);
+                }}
+              >
+                <Reply />
+                Reply
+              </Button>
+            )}
             {hasReplies && (
               <Button variant="outline" size="sm" onClick={toggleReplies}>
-                {showReplies ? 'Hide' : 'Show'} {comment.replies?.length} {comment.replies?.length === 1 ? 'reply' : 'replies'}
+                {showReplies ? 'Hide' : 'Show'} {comment.replies.length} {comment.replies.length === 1 ? 'reply' : 'replies'}
               </Button>
             )}
           </div>
+          {replyTo && (
+            <div className="pt-2">
+              <CreateEditCommentForm mode="create" isReply={true} closeReplyBox={() => setReplyTo(false)} parentId={comment.id} />
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Render nested replies only when showReplies is true */}
       {hasReplies && showReplies && (
         <div className="mt-4 space-y-4">
-          {comment.replies?.map((reply) => (
+          {comment.replies.map((reply) => (
             <CommentCard key={reply.id} comment={reply} isReply={true} />
           ))}
         </div>
@@ -148,6 +167,7 @@ const Likes = ({ commentId, likes_count, is_liked_by_auth }: { commentId: Commen
     likesDisplay
   ) : (
     <Button
+      size="sm"
       variant="outline"
       onClick={() => {
         router.post(CommentController.likeComment({ commentId }), undefined, {

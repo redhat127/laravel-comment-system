@@ -4,8 +4,10 @@ namespace Database\Seeders;
 
 use App\Models\Comment;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class CommentsTableSeeder extends Seeder
 {
@@ -15,72 +17,65 @@ class CommentsTableSeeder extends Seeder
 
     private int $maxComments = 50;
 
-    /**
-     * Run the database seeds.
-     */
+    private CarbonInterface $currentTime;
+
     public function run(): void
     {
-        Comment::truncate();
+        // Postgres-specific clean start
+        DB::statement('TRUNCATE TABLE comments RESTART IDENTITY CASCADE;');
 
         $this->users = User::all();
 
-        // Create top-level comments until we reach 50 total comments
+        // Start the clock (e.g., 2 hours ago)
+        $this->currentTime = now()->subHours(2);
+
         while ($this->commentCount < $this->maxComments) {
-            // Create a top-level comment
+
+            // Advance the clock for the Top Level comment
+            $this->currentTime = $this->currentTime->addMinute();
+
             $topComment = Comment::factory()->create([
                 'user_id' => $this->users->random()->id,
                 'parent_id' => null,
+                'created_at' => $this->currentTime,
+                'updated_at' => $this->currentTime,
             ]);
+
             $this->commentCount++;
 
-            // Decide if this comment will have replies (70% chance)
+            // Recursively add replies
             if ($this->commentCount < $this->maxComments && fake()->boolean(70)) {
                 $this->addReplies($topComment, 0);
             }
         }
     }
 
-    /**
-     * Recursively add replies to a comment
-     */
     private function addReplies(Comment $parentComment, int $depth): void
     {
-        // Limit depth to prevent extremely deep nesting
         if ($depth >= 4 || $this->commentCount >= $this->maxComments) {
             return;
         }
 
-        // Number of direct replies to this comment (0-5 replies)
-        $numReplies = fake()->numberBetween(0, 5);
-
-        // Decrease probability of replies as we go deeper (80%, 60%, 40%, 20%)
-        $replyProbability = max(10, 80 - ($depth * 20));
-
-        if (! fake()->boolean($replyProbability)) {
-            return;
-        }
-
-        $replies = collect();
+        $numReplies = fake()->numberBetween(1, 3);
 
         for ($i = 0; $i < $numReplies && $this->commentCount < $this->maxComments; $i++) {
+
+            // Advance the clock for EVERY reply
+            $this->currentTime = $this->currentTime->addMinute();
+
             $reply = Comment::factory()->create([
                 'user_id' => $this->users->random()->id,
                 'parent_id' => $parentComment->id,
+                'created_at' => $this->currentTime,
+                'updated_at' => $this->currentTime,
             ]);
+
             $this->commentCount++;
-            $replies->push($reply);
-        }
 
-        // Each reply has a chance to have its own replies (recursively)
-        $replies->each(function (Comment $reply) use ($depth) {
-            if ($this->commentCount >= $this->maxComments) {
-                return false; // Stop iteration
-            }
-
-            // 60% chance a reply will have its own replies
+            // 60% chance for a reply to have its own nested replies
             if (fake()->boolean(60)) {
                 $this->addReplies($reply, $depth + 1);
             }
-        });
+        }
     }
 }

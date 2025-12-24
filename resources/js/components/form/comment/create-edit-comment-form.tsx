@@ -20,6 +20,19 @@ const commentSchema = z.object({
 
 type CreateModeProps = {
   mode: 'create';
+  isReply?: false;
+  commentId?: never;
+  parentId?: never;
+  body?: never;
+  closeEditCommentBox?: never;
+  closeReplyBox?: never;
+};
+
+type ReplyModeProps = {
+  mode: 'create';
+  isReply: true;
+  parentId: string;
+  closeReplyBox: () => void;
   commentId?: never;
   body?: never;
   closeEditCommentBox?: never;
@@ -30,9 +43,12 @@ type EditModeProps = {
   commentId: string;
   body: string;
   closeEditCommentBox: () => void;
+  isReply?: never;
+  parentId?: never;
+  closeReplyBox?: never;
 };
 
-type CommentFormProps = CreateModeProps | EditModeProps;
+type CommentFormProps = CreateModeProps | ReplyModeProps | EditModeProps;
 
 const BodyTextBox = <TFieldValues extends FieldValues = FieldValues>({
   name,
@@ -55,30 +71,34 @@ const BodyTextBox = <TFieldValues extends FieldValues = FieldValues>({
       }}
       hideLabel
     />
-    <p
-      className={cn('text-sm', {
-        'text-muted-foreground': bodyCharactersLeft >= 0,
-        'text-destructive': bodyCharactersLeft < 0,
-      })}
-    >
-      Characters left: {bodyCharactersLeft}
-    </p>
-    <p className="text-xs text-muted-foreground">Press Shift+Enter for new line</p>
+    <div className="flex items-center justify-between">
+      <p
+        className={cn('text-sm', {
+          'text-muted-foreground': bodyCharactersLeft >= 0,
+          'text-destructive': bodyCharactersLeft < 0,
+        })}
+      >
+        Characters left: {bodyCharactersLeft}
+      </p>
+      <p className="text-xs text-muted-foreground">Press Shift+Enter for new line</p>
+    </div>
   </div>
 );
 
 export const CreateEditCommentForm = (props: CommentFormProps) => {
   const { mode } = props;
 
-  const body = mode === 'edit' ? props.body : '';
-  const closeEditCommentBox = mode === 'edit' ? props.closeEditCommentBox : undefined;
+  const isReplyMode = mode === 'create' && props.isReply === true;
+  const isEditMode = mode === 'edit';
+  const isCreateMode = mode === 'create' && !props.isReply;
 
   const form = useForm({
     resolver: zodResolver(commentSchema),
     defaultValues: {
-      body,
+      body: isEditMode ? props.body : '',
     },
   });
+
   const {
     control,
     handleSubmit,
@@ -89,34 +109,33 @@ export const CreateEditCommentForm = (props: CommentFormProps) => {
   const [isPending, setIsPending] = useState(false);
   const isFormDisabled = isSubmitting || isPending;
 
-  const bodyLength = watch('body').trim().length;
-  const bodyCharactersLeft = 500 - bodyLength;
-
-  const isCreateMode = mode === 'create';
+  const bodyValue = watch('body') || '';
+  const bodyCharactersLeft = 500 - bodyValue.trim().length;
 
   const handleFormSubmit = handleSubmit((data) => {
     const config: VisitHelperOptions<z.infer<typeof commentSchema>> = {
       preserveScroll: true,
       preserveState: 'errors',
-      onBefore() {
+      onBefore: () => {
         setIsPending(true);
       },
-      onFinish() {
+      onFinish: () => {
         setIsPending(false);
       },
-      onError(errors) {
+      onError: (errors) => {
         showServerValidationErrors(errors);
       },
     };
 
-    if (isCreateMode) {
+    if (isReplyMode) {
+      router.post(CommentController.replyTo({ commentId: props.parentId }), data, config);
+    } else if (isCreateMode) {
       router.post(CommentController.post(), data, config);
-    } else {
-      if (props.commentId) {
-        router.patch(CommentController.patch({ commentId: props.commentId }), data, config);
-      }
+    } else if (isEditMode) {
+      router.patch(CommentController.patch({ commentId: props.commentId }), data, config);
     }
   });
+
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -125,34 +144,38 @@ export const CreateEditCommentForm = (props: CommentFormProps) => {
   };
 
   return (
-    <form onSubmit={handleFormSubmit}>
+    <form onSubmit={handleFormSubmit} className="w-full">
       <FieldGroup className="gap-4">
-        {isCreateMode && (
-          <div className="flex items-start gap-2">
-            <UserAvatar widthHeightClassNames="h-12 w-12 min-w-12" />
-            <BodyTextBox control={control} name="body" onKeyDown={onKeyDown} bodyCharactersLeft={bodyCharactersLeft} />
-          </div>
-        )}
+        <div className="flex items-start gap-2">
+          {/* Avatar is now visible in all scenarios */}
+          <UserAvatar widthHeightClassNames="h-12 w-12 min-w-12" />
 
-        {!isCreateMode && <BodyTextBox control={control} name="body" onKeyDown={onKeyDown} bodyCharactersLeft={bodyCharactersLeft} />}
+          <BodyTextBox control={control} name="body" onKeyDown={onKeyDown} bodyCharactersLeft={bodyCharactersLeft} />
+        </div>
 
-        <div className={cn('self-end', { 'flex items-center gap-2': !isCreateMode })}>
-          {!isCreateMode && (
-            <Button type="button" variant="outline" onClick={closeEditCommentBox} disabled={isFormDisabled}>
+        <div className="flex items-center justify-end gap-2">
+          {(isEditMode || isReplyMode) && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={isEditMode ? props.closeEditCommentBox : props.closeReplyBox}
+              disabled={isFormDisabled}
+            >
               Cancel
             </Button>
           )}
-          <SubmitBtn disabled={isFormDisabled}>
+          <SubmitBtn disabled={isFormDisabled} size="sm">
             <span className="flex items-center gap-1">
-              {isCreateMode ? (
+              {isEditMode ? (
                 <>
-                  <Send />
-                  Comment
+                  <Edit className="size-4" />
+                  Edit
                 </>
               ) : (
                 <>
-                  <Edit />
-                  Edit
+                  <Send className="size-4" />
+                  {isReplyMode ? 'Reply' : 'Comment'}
                 </>
               )}
             </span>

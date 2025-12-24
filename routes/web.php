@@ -47,6 +47,7 @@ Route::middleware('auth')->group(function () {
         ->controller(CommentController::class)
         ->group(function () {
             Route::post('/', 'post')->name('post');
+            Route::post('/reply-to/{commentId}', 'replyTo')->name('replyTo');
             Route::patch('/{commentId}', 'patch')->name('patch');
             Route::delete('/{commentId}', 'delete')->name('delete');
             Route::post('/{commentId}/like', 'likeComment')->name('likeComment');

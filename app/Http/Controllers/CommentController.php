@@ -102,4 +102,38 @@ class CommentController extends Controller
 
         return back();
     }
+
+    public function replyTo(string $commentId)
+    {
+        $commentId = $this->validateCommentId($commentId);
+
+        $comment = Comment::findOrFail($commentId);
+
+        $user = Auth::user();
+
+        if ($comment->user_id === $user->id) {
+            inertia()->flash('flashMessage', [
+                'type' => 'error',
+                'text' => 'You can\'t reply to your own comment.',
+            ]);
+
+            return back();
+        }
+
+        $validated = request()->validate([
+            'body' => $this->commentBodyRule(),
+        ]);
+
+        $user->comments()->create([
+            ...$validated,
+            'parent_id' => $comment->id,
+        ]);
+
+        inertia()->flash('flashMessage', [
+            'type' => 'success',
+            'text' => 'Comment added.',
+        ]);
+
+        return back();
+    }
 }

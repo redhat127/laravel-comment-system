@@ -15,7 +15,7 @@ type ExtraCommentPropsFromCommentResource = {
   user: Pick<UsersTable, 'name' | 'avatar'>;
   likes_count: number;
   is_liked_by_auth: boolean;
-  replies?: Array<CommentsTable & ExtraCommentPropsFromCommentResource>; // Optional, recursive type
+  replies: Array<CommentsTable & ExtraCommentPropsFromCommentResource>;
 };
 
 export interface HomePageProps {
