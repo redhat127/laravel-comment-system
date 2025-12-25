@@ -2,138 +2,199 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\CommentResource;
 use App\Models\Comment;
 use App\Trait\CustomRuleValidation;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Number;
 
 class CommentController extends Controller
 {
     use CustomRuleValidation;
 
-    public function post()
+    public function topLevelComments()
     {
-        $validated = request()->validate([
-            'body' => $this->commentBodyRule(),
+        $comments = Comment::latest('created_at')
+            ->where('parent_id', null)
+            ->with([
+                'user:id,name,avatar',
+                'likes' => fn ($query) => $query->where('user_id', Auth::id()),
+            ])
+            ->withCount('likes')
+            ->withCount('replies')
+            ->get();
+
+        return response()->json([
+            'comments' => CommentResource::collection($comments),
         ]);
-
-        Auth::user()->comments()->create($validated);
-
-        inertia()->flash('flashMessage', [
-            'type' => 'success',
-            'text' => 'Comment added.',
-        ]);
-
-        return back();
     }
 
-    private function validateCommentId(string $commentId)
+    public function commentsCount()
+    {
+        return response()->json([
+            'comments_count' => Number::format(Comment::count()),
+        ]);
+    }
+
+    private function validateCommentId(?string $commentId = null)
     {
         $validator = validator([
-            'commentId' => $commentId,
+            'commentId' => $commentId ?? request()->only(['commentId'])['commentId'],
         ], [
-            'commentId' => ['bail', 'required', 'string', 'max:50', 'ulid'],
+            'commentId' => ['bail', 'required', 'string', 'ulid', 'max:50'],
         ]);
 
         if ($validator->fails()) {
-            throw ValidationException::withMessages(
-                $validator->errors()->messages()
-            );
+            return ['errors' => $validator->errors()->messages()];
         }
 
-        return $validator->validated()['commentId'];
+        return $validator->validated();
     }
 
-    public function patch(string $commentId)
+    public function likes()
     {
-        $commentId = $this->validateCommentId($commentId);
+        $result = $this->validateCommentId();
 
-        $comment = Auth::user()->comments()->findOrFail($commentId);
+        if (is_array($result) && array_key_exists('errors', $result)) {
+            return response()->json(['errors' => $result['errors']], 422);
+        }
+
+        $commentId = $result['commentId'];
+
+        $comment = Comment::find($commentId);
 
         if (! $comment) {
-            abort(404);
+            return response()->json([], 404);
         }
-
-        $validated = request()->validate([
-            'body' => $this->commentBodyRule(),
-        ]);
-
-        $comment->update($validated);
-
-        inertia()->flash('flashMessage', [
-            'type' => 'success',
-            'text' => 'Comment updated.',
-        ]);
-
-        return back();
-    }
-
-    public function delete(string $commentId)
-    {
-        $commentId = $this->validateCommentId($commentId);
-
-        $comment = Auth::user()->comments()->findOrFail($commentId);
-
-        if (! $comment) {
-            abort(404);
-        }
-
-        $comment->delete();
-
-        inertia()->flash('flashMessage', [
-            'type' => 'success',
-            'text' => 'Comment deleted.',
-        ]);
-
-        return back();
-    }
-
-    public function likeComment(string $commentId)
-    {
-        $commentId = $this->validateCommentId($commentId);
-
-        $comment = Comment::findOrFail($commentId);
 
         $userId = Auth::id();
 
         $like = $comment->likes()->where('user_id', $userId)->first();
 
-        $like ? $like->delete() : $comment->likes()->create(['user_id' => $userId]);
+        if ($like) {
+            $like->delete();
+        } else {
+            $comment->likes()->create(['user_id' => $userId]);
+        }
 
-        return back();
+        return response()->json();
     }
 
-    public function replyTo(string $commentId)
+    public function replyTo()
     {
-        $commentId = $this->validateCommentId($commentId);
+        $validator = validator(request()->only(['body', 'commentId']), [
+            'body' => $this->commentBodyRule(),
+            'commentId' => ['bail', 'required', 'string', 'ulid', 'max:50'],
+        ]);
 
-        $comment = Comment::findOrFail($commentId);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()->messages()], 422);
+        }
+
+        $validated = $validator->validated();
+
+        $commentId = $validated['commentId'];
+
+        $comment = Comment::find($commentId);
+
+        if (! $comment) {
+            return response()->json([], 404);
+        }
 
         $user = Auth::user();
 
         if ($comment->user_id === $user->id) {
-            inertia()->flash('flashMessage', [
-                'type' => 'error',
-                'text' => 'You can\'t reply to your own comment.',
-            ]);
-
-            return back();
+            return response()->json(['errors' => [
+                'commentId' => ['You can\'t reply to your own comment.'],
+            ]], 422);
         }
 
-        $validated = request()->validate([
+        return response()->json([
+            'new_comment' => CommentResource::make($user->comments()->create([
+                ...collect($validated)->only('body')->all(),
+                'parent_id' => $commentId,
+            ])),
+        ]);
+    }
+
+    public function update(string $commentId)
+    {
+        $validator = validator([
+            'commentId' => $commentId,
+            'body' => request()->get('body'),
+        ], [
+            'commentId' => ['bail', 'required', 'string', 'ulid', 'max:50'],
             'body' => $this->commentBodyRule(),
         ]);
 
-        $user->comments()->create([
-            ...$validated,
-            'parent_id' => $comment->id,
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()->messages()], 422);
+        }
+
+        $validated = $validator->validated();
+
+        $commentId = $validated['commentId'];
+
+        $comment = Auth::user()->comments()->find($commentId);
+
+        if (! $comment) {
+            return response()->json([], 404);
+        }
+
+        $comment->body = $validated['body'];
+        $comment->save();
+
+        return response()->json([
+            'updated_comment' => CommentResource::make($comment),
+        ]);
+    }
+
+    public function delete(string $commentId)
+    {
+        $result = $this->validateCommentId($commentId);
+
+        if (is_array($result) && array_key_exists('errors', $result)) {
+            return response()->json(['errors' => $result['errors']], 422);
+        }
+
+        $commentId = $result['commentId'];
+
+        $comment = Auth::user()->comments()->find($commentId);
+
+        if (! $comment) {
+            return response()->json([], 404);
+        }
+
+        $comment->replies()->delete();
+
+        $comment->delete();
+
+        return response()->noContent();
+    }
+
+    public function post()
+    {
+        $validator = validator([
+            'body' => request()->get('body'),
+        ], [
+            'body' => $this->commentBodyRule(),
         ]);
 
-        inertia()->flash('flashMessage', [
-            'type' => 'success',
-            'text' => 'Comment added.',
-        ]);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()->messages()], 422);
+        }
 
-        return back();
+        $validated = $validator->validated();
+
+        $user = Auth::user();
+
+        $comment = $user->comments()->create($validated);
+
+        $comment->setRelation('user', $user);
+
+        return response()
+            ->json([
+                'new_comment' => CommentResource::make($comment),
+            ]);
     }
 }

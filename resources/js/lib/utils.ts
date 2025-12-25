@@ -18,3 +18,11 @@ export const showServerValidationErrors = (errors: Record<string, string>) => {
     toast.error(message);
   }
 };
+
+export const wait = (timeout = 1000) => {
+  return new Promise((res) => setTimeout(res, timeout));
+};
+
+export function removeNulls<T extends Record<string, unknown>>(obj: T): Partial<T> {
+  return Object.fromEntries(Object.entries(obj).filter(([, value]) => value !== null && value !== undefined)) as Partial<T>;
+}

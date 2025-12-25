@@ -46,10 +46,14 @@ Route::middleware('auth')->group(function () {
         ->name('comment.')
         ->controller(CommentController::class)
         ->group(function () {
+            Route::get('/top-level-comments', 'topLevelComments')
+                ->name('topLevelComments');
+            Route::get('/comments-count', 'commentsCount')
+                ->name('commentsCount');
             Route::post('/', 'post')->name('post');
-            Route::post('/reply-to/{commentId}', 'replyTo')->name('replyTo');
-            Route::patch('/{commentId}', 'patch')->name('patch');
+            Route::post('/likes', 'likes')->name('likes');
+            Route::post('/reply-to', 'replyTo')->name('replyTo');
+            Route::patch('/{commentId}', 'update')->name('update');
             Route::delete('/{commentId}', 'delete')->name('delete');
-            Route::post('/{commentId}/like', 'likeComment')->name('likeComment');
         });
 });
