@@ -2,7 +2,7 @@ import CommentController from '@/actions/App/Http/Controllers/CommentController'
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import type { CommentsTable } from '@/types';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import axios, { AxiosError } from 'axios';
 import { Heart } from 'lucide-react';
 import { toast } from 'sonner';
@@ -36,21 +36,29 @@ export const CommentLikes = ({
       await queryClient.cancelQueries({ queryKey: ['comment-replies'] });
 
       // Snapshot previous values
-      const previousComments = queryClient.getQueryData<Array<Comment>>(['comments']);
+      const previousComments = queryClient.getQueryData<InfiniteData<{ comments: Array<Comment>; next_cursor: string | null }>>(['comments']);
       const previousReplies = queryClient.getQueriesData<Array<Comment>>({ queryKey: ['comment-replies'] });
 
       // Optimistically update top-level comments
-      queryClient.setQueryData<Array<Comment>>(['comments'], (old = []) => {
-        return old.map((comment) => {
-          if (comment.id === commentId) {
-            return {
-              ...comment,
-              is_liked_by_auth: !is_liked_by_auth,
-              likes_count: is_liked_by_auth ? likes_count - 1 : likes_count + 1,
-            };
-          }
-          return comment;
-        });
+      queryClient.setQueryData<InfiniteData<{ comments: Array<Comment>; next_cursor: string | null }>>(['comments'], (old) => {
+        if (!old) return old;
+
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            comments: page.comments.map((comment) => {
+              if (comment.id === commentId) {
+                return {
+                  ...comment,
+                  is_liked_by_auth: !is_liked_by_auth,
+                  likes_count: is_liked_by_auth ? likes_count - 1 : likes_count + 1,
+                };
+              }
+              return comment;
+            }),
+          })),
+        };
       });
 
       // Optimistically update ALL reply caches

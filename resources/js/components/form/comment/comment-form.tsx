@@ -9,7 +9,7 @@ import { cn, removeNulls } from '@/lib/utils';
 import type { CommentsTable } from '@/types';
 import { commentBodyRule } from '@/zod/fields';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import axios, { AxiosError } from 'axios';
 import { Edit, Send } from 'lucide-react';
 import { useState, type KeyboardEvent } from 'react';
@@ -126,29 +126,56 @@ export const CommentForm = (props: CommentFormProps) => {
       if (props.mode === 'reply-to' || props.mode === 'create') {
         queryClient.setQueryData<number>(['comments-count'], (commentsCount = 0) => commentsCount + 1);
       }
-      queryClient.setQueryData<Array<Comment>>(['comments'], (comments = []) => {
+
+      queryClient.setQueryData<InfiniteData<{ comments: Array<Comment>; next_cursor: string | null }>>(['comments'], (old) => {
+        if (!old) return old;
+
         if (props.mode === 'create') {
-          return [{ ...comment, is_liked_by_auth: false, replies_count: 0, likes_count: 0 }, ...comments];
+          return {
+            ...old,
+            pages: old.pages.map((page, index) => {
+              if (index === 0) {
+                return {
+                  ...page,
+                  comments: [{ ...comment, is_liked_by_auth: false, replies_count: 0, likes_count: 0 }, ...page.comments],
+                };
+              }
+              return page;
+            }),
+          };
         }
+
         if (props.mode === 'reply-to') {
-          return comments.map((c) => (c.id === comment.parent_id ? { ...c, replies_count: c.replies_count! + 1 } : c));
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              comments: page.comments.map((c) => (c.id === comment.parent_id ? { ...c, replies_count: c.replies_count! + 1 } : c)),
+            })),
+          };
         }
+
         if (props.mode === 'edit') {
-          return comments.map((c) => (c.id === comment.id ? { ...c, ...removeNulls(comment) } : c));
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              comments: page.comments.map((c) => (c.id === comment.id ? { ...c, ...removeNulls(comment) } : c)),
+            })),
+          };
         }
-        return comments;
+
+        return old;
       });
 
       if (props.mode === 'reply-to') {
         const existingReplies = queryClient.getQueryData<Array<Comment>>(['comment-replies', comment.parent_id]);
         if (existingReplies) {
           queryClient.setQueryData<Array<Comment>>(['comment-replies', comment.parent_id], (replies = []) => {
-            // Add to the end instead of the beginning to match backend order (oldest to newest)
             return [...replies, { ...comment, is_liked_by_auth: false, replies_count: 0, likes_count: 0 }];
           });
         }
 
-        // Update ALL reply caches to increment replies_count for nested replies
         queryClient.setQueriesData<Array<Comment>>({ queryKey: ['comment-replies'] }, (replies) => {
           if (!replies) return replies;
 
@@ -162,7 +189,6 @@ export const CommentForm = (props: CommentFormProps) => {
       }
 
       if (props.mode === 'edit') {
-        // Update ALL reply caches for edited comments
         queryClient.setQueriesData<Array<Comment>>({ queryKey: ['comment-replies'] }, (replies) => {
           if (!replies) return replies;
 

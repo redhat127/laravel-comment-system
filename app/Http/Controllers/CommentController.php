@@ -15,18 +15,33 @@ class CommentController extends Controller
 
     public function topLevelComments()
     {
-        $comments = Comment::latest('created_at')
+        $perPage = 10; // Number of comments per page
+        $cursor = request()->query('cursor');
+
+        $query = Comment::latest('created_at')
             ->where('parent_id', null)
             ->with([
                 'user:id,name,avatar',
                 'likes' => fn ($query) => $query->where('user_id', Auth::id()),
             ])
             ->withCount('likes')
-            ->withCount('replies')
-            ->get();
+            ->withCount('replies');
+
+        // If cursor is provided, fetch comments older than the cursor
+        if ($cursor) {
+            $query->where('created_at', '<', $cursor);
+        }
+
+        $comments = $query->limit($perPage)->get();
+
+        // Get the next cursor (created_at of the last comment)
+        $nextCursor = $comments->count() === $perPage
+            ? $comments->last()->created_at->toISOString()
+            : null;
 
         return response()->json([
             'comments' => CommentResource::collection($comments),
+            'next_cursor' => $nextCursor,
         ]);
     }
 

@@ -2,10 +2,10 @@ import CommentController from '@/actions/App/Http/Controllers/CommentController'
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import type { CommentsTable, UsersTable } from '@/types';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import axios from 'axios';
-import { Reply } from 'lucide-react';
-import { Suspense, useEffect, useState } from 'react';
+import { Loader2, Reply } from 'lucide-react';
+import { Fragment, Suspense, useEffect, useState } from 'react';
 import { CommentForm } from '../form/comment/comment-form';
 import { ErrorBoundary } from '../react-query-error-boundary';
 import { Button } from '../ui/button';
@@ -15,6 +15,14 @@ import { CommentDropdown } from './comment-dropdown';
 import { CommentLikes } from './comment-likes';
 import { CommentReplies } from './comment-replies';
 import { CommentRepliesSkeleton } from './comment-skeleton';
+
+export type Comment = CommentsTable & {
+  created_at_for_human: string;
+  user?: Pick<UsersTable, 'id' | 'name' | 'avatar'>;
+  is_liked_by_auth?: boolean;
+  likes_count?: number;
+  replies_count?: number;
+};
 
 export const CommentCard = ({ comment, isReply = false }: { comment: Comment; isReply?: boolean }) => {
   const auth = useAuth();
@@ -38,7 +46,6 @@ export const CommentCard = ({ comment, isReply = false }: { comment: Comment; is
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [commentEditing, replyTo]);
 
-  // Add this effect to auto-hide replies when replies_count becomes 0
   useEffect(() => {
     if (comment.replies_count === 0 && showReplies) {
       setShowReplies(false);
@@ -46,6 +53,7 @@ export const CommentCard = ({ comment, isReply = false }: { comment: Comment; is
   }, [comment.replies_count, showReplies]);
 
   const hasReplies = comment.replies_count! > 0;
+
   return (
     <div className={cn(isReply && 'ml-8 border-l-2 pl-4')}>
       <Card className="gap-2">
@@ -125,30 +133,48 @@ export const CommentCard = ({ comment, isReply = false }: { comment: Comment; is
   );
 };
 
-export type Comment = CommentsTable & {
-  created_at_for_human: string;
-  user?: Pick<UsersTable, 'id' | 'name' | 'avatar'>;
-  is_liked_by_auth?: boolean;
-  likes_count?: number;
-  replies_count?: number;
-};
-
 export const CommentList = () => {
-  const { data: comments } = useSuspenseQuery({
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery({
     queryKey: ['comments'],
-    async queryFn() {
+    async queryFn({ pageParam, signal }) {
       const res = await axios.get<{
         comments: Array<Comment>;
-      }>(CommentController.topLevelComments.url());
-      return res.data.comments;
+        next_cursor: string | null;
+      }>(CommentController.topLevelComments.url(), {
+        params: { cursor: pageParam },
+        signal,
+      });
+      return res.data;
     },
+    getNextPageParam: (lastPage) => lastPage.next_cursor,
+    initialPageParam: undefined as string | undefined,
     staleTime: 60 * 1000, // 1 minute
   });
+
   return (
     <div className="space-y-4">
-      {comments.map((comment) => (
-        <CommentCard key={comment.id} comment={comment} />
+      {data.pages.map((page, pageIndex) => (
+        <Fragment key={pageIndex}>
+          {page.comments.map((comment) => (
+            <CommentCard key={comment.id} comment={comment} />
+          ))}
+        </Fragment>
       ))}
+
+      {hasNextPage && (
+        <div className="flex justify-center pt-4">
+          <Button onClick={() => fetchNextPage()} disabled={isFetchingNextPage} variant="outline">
+            {isFetchingNextPage ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              'Load More'
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
