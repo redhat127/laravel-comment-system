@@ -52,15 +52,25 @@ class CommentsTableSeeder extends Seeder
             return;
         }
 
-        // Each comment gets 1-3 replies
+        // Each comment gets 1–3 replies
         $numReplies = fake()->numberBetween(1, 3);
+
+        // Exclude parent author
+        $availableUsers = $this->users->where('id', '!=', $parentComment->user_id);
+
+        // Safety check (in case you only have 1 user)
+        if ($availableUsers->isEmpty()) {
+            return;
+        }
 
         for ($i = 0; $i < $numReplies; $i++) {
             // Replies come after their parent
             $this->currentTime = $this->currentTime->addMinutes(fake()->numberBetween(2, 15));
 
+            $replyAuthor = $availableUsers->random();
+
             $reply = Comment::factory()->create([
-                'user_id' => $this->users->random()->id,
+                'user_id' => $replyAuthor->id,
                 'parent_id' => $parentComment->id,
                 'created_at' => $this->currentTime,
                 'updated_at' => $this->currentTime,
