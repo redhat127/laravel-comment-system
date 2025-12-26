@@ -6,6 +6,7 @@ use App\Http\Resources\CommentResource;
 use App\Models\Comment;
 use App\Trait\CustomRuleValidation;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Number;
 
 class CommentController extends Controller
@@ -202,8 +203,8 @@ class CommentController extends Controller
 
         $parent_id = $comment->parent_id;
 
-        // Get all nested reply IDs recursively
-        $allReplyIds = $this->getAllReplyIds($comment->id);
+        // Get all nested reply IDs using a single recursive query
+        $allReplyIds = $this->getAllReplyIdsRecursive($comment->id);
 
         // Delete all replies in one query
         $deletedRepliesCount = Comment::whereIn('id', $allReplyIds)->delete();
@@ -216,20 +217,29 @@ class CommentController extends Controller
         return response()->json(compact('parent_id', 'deleted_count'));
     }
 
-    private function getAllReplyIds(string $commentId): array
+    private function getAllReplyIdsRecursive(string $commentId): array
     {
-        $replyIds = [];
+        // Use raw SQL with recursive CTE for maximum efficiency
+        $results = DB::select('
+        WITH RECURSIVE reply_tree AS (
+            -- Base case: direct replies
+            SELECT id, parent_id
+            FROM comments
+            WHERE parent_id = ?
+            AND deleted_at IS NULL
 
-        // Get direct replies
-        $directReplies = Comment::where('parent_id', $commentId)->pluck('id')->toArray();
+            UNION ALL
 
-        foreach ($directReplies as $replyId) {
-            $replyIds[] = $replyId;
-            // Recursively get nested replies
-            $replyIds = array_merge($replyIds, $this->getAllReplyIds($replyId));
-        }
+            -- Recursive case: replies to replies
+            SELECT c.id, c.parent_id
+            FROM comments c
+            INNER JOIN reply_tree rt ON c.parent_id = rt.id
+            WHERE c.deleted_at IS NULL
+        )
+        SELECT id FROM reply_tree
+    ', [$commentId]);
 
-        return $replyIds;
+        return array_column($results, 'id');
     }
 
     public function post()
