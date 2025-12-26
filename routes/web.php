@@ -53,6 +53,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/', 'post')->name('post');
             Route::post('/likes', 'likes')->name('likes');
             Route::post('/reply-to', 'replyTo')->name('replyTo');
+            Route::get('/{commentId}/replies', 'replies')
+                ->name('replies');
             Route::patch('/{commentId}', 'update')->name('update');
             Route::delete('/{commentId}', 'delete')->name('delete');
         });

@@ -138,6 +138,43 @@ export const CommentForm = (props: CommentFormProps) => {
         }
         return comments;
       });
+
+      if (props.mode === 'reply-to') {
+        const existingReplies = queryClient.getQueryData<Array<Comment>>(['comment-replies', comment.parent_id]);
+        if (existingReplies) {
+          queryClient.setQueryData<Array<Comment>>(['comment-replies', comment.parent_id], (replies = []) => {
+            // Add to the end instead of the beginning to match backend order (oldest to newest)
+            return [...replies, { ...comment, is_liked_by_auth: false, replies_count: 0, likes_count: 0 }];
+          });
+        }
+
+        // Update ALL reply caches to increment replies_count for nested replies
+        queryClient.setQueriesData<Array<Comment>>({ queryKey: ['comment-replies'] }, (replies) => {
+          if (!replies) return replies;
+
+          return replies.map((reply) => {
+            if (reply.id === comment.parent_id) {
+              return { ...reply, replies_count: reply.replies_count! + 1 };
+            }
+            return reply;
+          });
+        });
+      }
+
+      if (props.mode === 'edit') {
+        // Update ALL reply caches for edited comments
+        queryClient.setQueriesData<Array<Comment>>({ queryKey: ['comment-replies'] }, (replies) => {
+          if (!replies) return replies;
+
+          return replies.map((reply) => {
+            if (reply.id === comment.id) {
+              return { ...reply, ...removeNulls(comment) };
+            }
+            return reply;
+          });
+        });
+      }
+
       if (props.mode === 'create') {
         reset();
       }

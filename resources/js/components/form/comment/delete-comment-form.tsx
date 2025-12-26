@@ -13,7 +13,9 @@ export const DeleteCommentForm = ({ commentId }: { commentId: CommentsTable['id'
   const queryClient = useQueryClient();
   const mutation = useMutation({
     async mutationFn() {
-      const response = await axios.delete(CommentController.delete.url({ commentId }));
+      const response = await axios.delete<{ parent_id: CommentsTable['parent_id']; deleted_count: number }>(
+        CommentController.delete.url({ commentId }),
+      );
       return response.data;
     },
     onMutate() {
@@ -42,11 +44,44 @@ export const DeleteCommentForm = ({ commentId }: { commentId: CommentsTable['id'
       }
       toast.error('Failed to delete the comment.');
     },
-    onSuccess() {
-      queryClient.invalidateQueries({ queryKey: ['comments-count'], exact: true });
+    onSuccess({ deleted_count: deletedCount, parent_id: parentId }) {
+      // Decrement comments count by the total number of deleted comments
+      queryClient.setQueryData<number>(['comments-count'], (commentsCount = 0) => Math.max(0, commentsCount - deletedCount));
+
+      // Remove from top-level comments and decrement parent's replies_count
       queryClient.setQueryData<Array<Comment>>(['comments'], (comments = []) => {
-        return comments.filter((c) => c.id !== commentId);
+        const filtered = comments.filter((c) => c.id !== commentId);
+
+        if (parentId) {
+          return filtered.map((c) => {
+            if (c.id === parentId) {
+              return { ...c, replies_count: Math.max(0, c.replies_count! - 1) };
+            }
+            return c;
+          });
+        }
+
+        return filtered;
       });
+
+      // Remove from ALL reply caches and decrement parent's replies_count
+      queryClient.setQueriesData<Array<Comment>>({ queryKey: ['comment-replies'] }, (replies) => {
+        if (!replies) return replies;
+
+        const filtered = replies.filter((reply) => reply.id !== commentId);
+
+        if (parentId) {
+          return filtered.map((reply) => {
+            if (reply.id === parentId) {
+              return { ...reply, replies_count: Math.max(0, reply.replies_count! - 1) };
+            }
+            return reply;
+          });
+        }
+
+        return filtered;
+      });
+
       toast.success('Comment deleted.');
     },
     onSettled() {

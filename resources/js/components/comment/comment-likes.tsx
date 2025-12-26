@@ -33,11 +33,13 @@ export const CommentLikes = ({
     onMutate: async () => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['comments'], exact: true });
+      await queryClient.cancelQueries({ queryKey: ['comment-replies'] });
 
-      // Snapshot previous value
+      // Snapshot previous values
       const previousComments = queryClient.getQueryData<Array<Comment>>(['comments']);
+      const previousReplies = queryClient.getQueriesData<Array<Comment>>({ queryKey: ['comment-replies'] });
 
-      // Optimistically update
+      // Optimistically update top-level comments
       queryClient.setQueryData<Array<Comment>>(['comments'], (old = []) => {
         return old.map((comment) => {
           if (comment.id === commentId) {
@@ -51,12 +53,33 @@ export const CommentLikes = ({
         });
       });
 
-      return { previousComments };
+      // Optimistically update ALL reply caches
+      queryClient.setQueriesData<Array<Comment>>({ queryKey: ['comment-replies'] }, (replies) => {
+        if (!replies) return replies;
+
+        return replies.map((reply) => {
+          if (reply.id === commentId) {
+            return {
+              ...reply,
+              is_liked_by_auth: !is_liked_by_auth,
+              likes_count: is_liked_by_auth ? likes_count - 1 : likes_count + 1,
+            };
+          }
+          return reply;
+        });
+      });
+
+      return { previousComments, previousReplies };
     },
     onError(error, _, context) {
-      // Rollback on error
+      // Revert to previous state
       if (context?.previousComments) {
-        queryClient.setQueryData<Array<Comment>>(['comments'], context.previousComments);
+        queryClient.setQueryData(['comments'], context.previousComments);
+      }
+      if (context?.previousReplies) {
+        context.previousReplies.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data);
+        });
       }
 
       if (error instanceof AxiosError) {

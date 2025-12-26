@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
-const CommentCardSkeleton = ({ isReply = false }: { isReply?: boolean }) => {
+export const CommentCardSkeleton = ({ isReply = false }: { isReply?: boolean }) => {
   return (
     <div className={cn(isReply && 'ml-8 border-l-2 pl-4')}>
       <Card className="gap-2">
@@ -39,7 +39,7 @@ const CommentCardSkeleton = ({ isReply = false }: { isReply?: boolean }) => {
   );
 };
 
-const CommentListSkeleton = () => {
+export const CommentListSkeleton = () => {
   return (
     <div className="space-y-4">
       <CommentCardSkeleton />
@@ -50,4 +50,13 @@ const CommentListSkeleton = () => {
   );
 };
 
-export { CommentCardSkeleton, CommentListSkeleton };
+export const CommentRepliesSkeleton = () => {
+  return (
+    <div className="space-y-4">
+      <CommentCardSkeleton isReply />
+      <CommentCardSkeleton isReply />
+      <CommentCardSkeleton isReply />
+      <CommentCardSkeleton isReply />
+    </div>
+  );
+};

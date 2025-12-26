@@ -36,6 +36,37 @@ class CommentController extends Controller
         ]);
     }
 
+    public function replies(string $commentId)
+    {
+        $result = $this->validateCommentId($commentId);
+
+        if (is_array($result) && array_key_exists('errors', $result)) {
+            return response()->json(['errors' => $result['errors']], 422);
+        }
+
+        $commentId = $result['commentId'];
+
+        $comment = Comment::find($commentId);
+
+        if (! $comment) {
+            return response()->json([], 404);
+        }
+
+        $replies = $comment->replies()
+            ->oldest('created_at')
+            ->with([
+                'user:id,name,avatar',
+                'likes' => fn ($query) => $query->where('user_id', Auth::id()),
+            ])
+            ->withCount('likes')
+            ->withCount('replies')
+            ->get();
+
+        return response()->json([
+            'replies' => CommentResource::collection($replies),
+        ]);
+    }
+
     private function validateCommentId(?string $commentId = null)
     {
         $validator = validator([
@@ -109,11 +140,15 @@ class CommentController extends Controller
             ]], 422);
         }
 
+        $newComment = $user->comments()->create([
+            ...collect($validated)->only('body')->all(),
+            'parent_id' => $commentId,
+        ]);
+
+        $newComment->setRelation('user', $user);
+
         return response()->json([
-            'new_comment' => CommentResource::make($user->comments()->create([
-                ...collect($validated)->only('body')->all(),
-                'parent_id' => $commentId,
-            ])),
+            'new_comment' => CommentResource::make($newComment),
         ]);
     }
 
@@ -165,11 +200,36 @@ class CommentController extends Controller
             return response()->json([], 404);
         }
 
-        $comment->replies()->delete();
+        $parent_id = $comment->parent_id;
 
+        // Get all nested reply IDs recursively
+        $allReplyIds = $this->getAllReplyIds($comment->id);
+
+        // Delete all replies in one query
+        $deletedRepliesCount = Comment::whereIn('id', $allReplyIds)->delete();
+
+        // Delete the comment itself
         $comment->delete();
 
-        return response()->noContent();
+        $deleted_count = $deletedRepliesCount + 1; // +1 for the comment itself
+
+        return response()->json(compact('parent_id', 'deleted_count'));
+    }
+
+    private function getAllReplyIds(string $commentId): array
+    {
+        $replyIds = [];
+
+        // Get direct replies
+        $directReplies = Comment::where('parent_id', $commentId)->pluck('id')->toArray();
+
+        foreach ($directReplies as $replyId) {
+            $replyIds[] = $replyId;
+            // Recursively get nested replies
+            $replyIds = array_merge($replyIds, $this->getAllReplyIds($replyId));
+        }
+
+        return $replyIds;
     }
 
     public function post()

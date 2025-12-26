@@ -5,15 +5,18 @@ import type { CommentsTable, UsersTable } from '@/types';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { Reply } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { CommentForm } from '../form/comment/comment-form';
+import { ErrorBoundary } from '../react-query-error-boundary';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { UserAvatar } from '../user-avatar';
 import { CommentDropdown } from './comment-dropdown';
 import { CommentLikes } from './comment-likes';
+import { CommentReplies } from './comment-replies';
+import { CommentRepliesSkeleton } from './comment-skeleton';
 
-const CommentCard = ({ comment, isReply = false }: { comment: Comment; isReply?: boolean }) => {
+export const CommentCard = ({ comment, isReply = false }: { comment: Comment; isReply?: boolean }) => {
   const auth = useAuth();
 
   const [commentEditing, setCommentEditing] = useState(false);
@@ -34,6 +37,13 @@ const CommentCard = ({ comment, isReply = false }: { comment: Comment; isReply?:
     }
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [commentEditing, replyTo]);
+
+  // Add this effect to auto-hide replies when replies_count becomes 0
+  useEffect(() => {
+    if (comment.replies_count === 0 && showReplies) {
+      setShowReplies(false);
+    }
+  }, [comment.replies_count, showReplies]);
 
   const hasReplies = comment.replies_count! > 0;
   return (
@@ -89,6 +99,28 @@ const CommentCard = ({ comment, isReply = false }: { comment: Comment; isReply?:
           )}
         </CardContent>
       </Card>
+      {showReplies && (
+        <div className="mt-4">
+          <ErrorBoundary
+            fallbackRender={({ resetErrorBoundary }) => (
+              <div className="ml-8 border-l-2 pl-4">
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center space-y-3 py-8 text-center">
+                    <p className="text-sm text-muted-foreground">Failed to load replies.</p>
+                    <Button onClick={() => resetErrorBoundary()} variant="outline" size="sm">
+                      Try again
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          >
+            <Suspense fallback={<CommentRepliesSkeleton />}>
+              <CommentReplies commentId={comment.id} />
+            </Suspense>
+          </ErrorBoundary>
+        </div>
+      )}
     </div>
   );
 };
